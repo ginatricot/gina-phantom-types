@@ -1,0 +1,21 @@
+- case: calling_function_with_unknown_raises
+  main: |
+    import datetime
+    from phantom.datetime import TZAware
+
+    def take_aware(a: TZAware) -> TZAware:
+        return a
+
+    take_aware(datetime.datetime.now()) # E: Argument 1 to "take_aware" has incompatible type "datetime"; expected "TZAware"  [arg-type]
+- case: calling_function_with_known
+  main: |
+    import datetime
+    from phantom.datetime import TZAware
+
+    def take_aware(a: TZAware) -> TZAware:
+        return a
+
+    b = take_aware(
+      TZAware.parse(datetime.datetime.now(tz=datetime.timezone.utc))
+    )
+    reveal_type(b) # N: Revealed type is 'phantom.datetime.TZAware'

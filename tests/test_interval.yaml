@@ -1,0 +1,53 @@
+- case: calling_function_with_unknown_raises
+  main: |
+    from phantom.interval import Natural
+
+    def take_nat(a: Natural) -> Natural:
+        return a
+
+    take_nat(1) # E: Argument 1 to "take_nat" has incompatible type "int"; expected "Natural"  [arg-type]
+
+- case: calling_function_with_known_1
+  main: |
+    from phantom.interval import Natural
+
+    def take_nat(a: Natural) -> Natural:
+        return a
+
+    b = take_nat(Natural.parse(1))
+    reveal_type(b) # N: Revealed type is 'phantom.interval.Natural'
+
+- case: calling_function_with_known_2
+  main: |
+    from phantom.interval import Natural
+
+    def from_int(a: int) -> Natural:
+        if not isinstance(a, Natural):
+            raise TypeError
+        reveal_type(a) # N: Revealed type is 'phantom.interval.Natural'
+        return a
+
+    n = from_int(-1)
+    reveal_type(n) # N: Revealed type is 'phantom.interval.Natural'
+
+- case: test_overload
+  main: |
+    from typing import overload
+    from phantom.interval import Natural, NegativeInt
+
+    @overload
+    def add(a: Natural, b: Natural) -> Natural: ...
+    @overload
+    def add(a: NegativeInt, b: NegativeInt) -> NegativeInt: ...
+    @overload
+    def add(a: int, b: int) -> int: ...
+    def add(a: int, b: int) -> int:
+        return a + b
+
+    a = Natural.parse(1)
+    b = NegativeInt.parse(-1)
+
+    reveal_type(add(a, a)) # N: Revealed type is 'phantom.interval.Natural'
+    reveal_type(add(b, b)) # N: Revealed type is 'phantom.interval.NegativeInt'
+    reveal_type(add(a, b)) # N: Revealed type is 'builtins.int'
+    reveal_type(add(b, a)) # N: Revealed type is 'builtins.int'

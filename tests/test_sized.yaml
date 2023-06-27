@@ -1,0 +1,44 @@
+- case: test_subtype
+  main: |
+    from phantom.sized import NonEmpty
+    from typing import Tuple
+
+    class AtLeastOneInt(Tuple[int, ...], NonEmpty[int]): ...
+
+    def fst(things: AtLeastOneInt) -> int:
+        return things[0]
+
+    f = fst(AtLeastOneInt.parse((1, 2)))
+    reveal_type(f)  # N: Revealed type is 'builtins.int'
+
+- case: test_subscripted
+  main: |
+    from phantom.sized import NonEmpty
+
+    def fst(col: NonEmpty[int]) -> int:
+        return next(iter(col))
+
+    l = NonEmpty[int].parse((0,))
+    i = fst(l)
+    reveal_type(i)  # N: Revealed type is 'builtins.int'
+
+- case: test_annotated
+  main: |
+    from phantom.sized import NonEmpty
+
+    def fst(col: NonEmpty[int]) -> int:
+        return next(iter(col))
+
+    l: NonEmpty[int] = NonEmpty.parse((0,))
+    i = fst(l)
+    reveal_type(i)  # N: Revealed type is 'builtins.int'
+
+- case: test_str
+  main: |
+    from phantom.sized import NonEmpty
+
+    def name_length(name: NonEmpty[str]) -> int:
+        return len(name)
+
+    i = name_length(NonEmpty.parse("foo"))
+    reveal_type(i)  # N: Revealed type is 'builtins.int'
