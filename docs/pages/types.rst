@@ -1,10 +1,32 @@
+.. _types:
+
 Types
 =====
+
+Base classes
+------------
+
+.. automodule:: phantom
+
+.. autoclass:: Phantom
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :inherited-members:
+    :special-members: __schema__, __modify_schema__, __get_validators__, __bound__
 
 Boolean
 -------
 
 .. automodule:: phantom.boolean
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Country codes
+-------------
+
+.. automodule:: phantom.iso3166
     :members:
     :undoc-members:
     :show-inheritance:
@@ -16,6 +38,16 @@ Datetime
     :members:
     :undoc-members:
     :show-inheritance:
+
+Negated types
+-------------
+
+.. automodule:: phantom.negated
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. _numeric-intervals:
 
 Numeric intervals
 -----------------
@@ -30,22 +62,22 @@ Base classes
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: phantom.interval.Open
+.. autoclass:: phantom.interval.Exclusive
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: phantom.interval.Closed
+.. autoclass:: phantom.interval.Inclusive
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: phantom.interval.OpenClosed
+.. autoclass:: phantom.interval.ExclusiveInclusive
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: phantom.interval.ClosedOpen
+.. autoclass:: phantom.interval.InclusiveExclusive
     :members:
     :undoc-members:
     :show-inheritance:

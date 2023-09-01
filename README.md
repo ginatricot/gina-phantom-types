@@ -1,105 +1,220 @@
-phantom-types
--------------
+<p align=center><img src=https://raw.githubusercontent.com/antonagestam/phantom-types/main/docs/phantom.svg></p>
 
-[![CI](https://github.com/antonagestam/phantom-types/workflows/CI/badge.svg)](https://github.com/antonagestam/phantom-types/actions?query=workflow%3ACI+branch%3Amain)
+<h1 align=center>phantom-types</h1>
 
-[Phantom types][ghosts] for Python that will help you make illegal states
-unrepresentable and avoid shotgun parsing by practicing
-["Parse, don't validate"][parse].
+<p align=center>
+    <a href=https://github.com/antonagestam/phantom-types/actions?query=workflow%3ACI+branch%3Amain><img src=https://github.com/antonagestam/phantom-types/workflows/CI/badge.svg alt="CI Build Status"></a>
+    <a href=https://phantom-types.readthedocs.io/en/stable/><img src=https://readthedocs.org/projects/phantom-types/badge/?version=main alt="Documentation Build Status"></a>
+    <a href=https://codecov.io/gh/antonagestam/phantom-types><img src=https://codecov.io/gh/antonagestam/phantom-types/branch/main/graph/badge.svg?token=UE85B7IA3Q alt="Test coverage report"></a>
+    <br>
+    <a href=https://pypi.org/project/phantom-types/><img src=https://img.shields.io/pypi/v/phantom-types.svg?color=informational&label=PyPI alt="PyPI Package"></a>
+    <a href=https://pypi.org/project/phantom-types/><img src=https://img.shields.io/pypi/pyversions/phantom-types.svg?color=informational&label=Python alt="Python versions"></a>
+</p>
 
-_This project is in early development and fundamental changes should be expected.
-Semantic versioning will be followed after version 1.0, but before that breaking changes
-will occur between minor versions._
+[Phantom types][ghosts] for Python will help you make illegal states unrepresentable and
+avoid shotgun parsing by enabling you to practice ["Parse, don't validate"][parse].
 
-[Checkout the complete documentation on Read the Docs →][docs]
+<h4 align=center>
+    <a href=https://phantom-types.readthedocs.io/en/stable/>Checkout the complete documentation on Read the Docs →</a>
+</h4>
 
-Installation
-============
+## Installation
 
 ```bash
 $  python3 -m pip install phantom-types
 ```
 
-Motivating example
-==================
+#### Extras
 
-Imagine that you're working on implementing a `head` function that should return the
-first item of any given iterable. The implementation is simple:
+There are a few extras available that can be used to either enable a feature or install
+a compatible version of a third-party library.
 
-```python
-def head(iterable: Iterable[T]) -> T:
-    return next(iter(iterable))
+| Extra name       | Feature                                                                                                    |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| `[dateutil]`     | Installs [python-dateutil]. Required for parsing strings with [`TZAware` and `TZNaive`][phantom-datetime]. |
+| `[phonenumbers]` | Installs [phonenumbers]. Required to use [`phantom.ext.phonenumbers`][phantom-phonenumbers].               |
+| `[pydantic]`     | Installs [pydantic].                                                                                       |
+| `[hypothesis]`   | Installs [hypothesis].                                                                                     |
+| `[all]`          | Installs all of the above.                                                                                 |
+
+[python-dateutil]: https://pypi.org/project/python-dateutil/
+[phonenumbers]: https://pypi.org/project/phonenumbers/
+[pydantic]: https://pypi.org/project/pydantic/
+[hypothesis]: https://pypi.org/project/hypothesis/
+[phantom-datetime]:
+  https://phantom-types.readthedocs.io/en/main/pages/types.html#module-phantom.datetime
+[phantom-phonenumbers]:
+  https://phantom-types.readthedocs.io/en/main/pages/external-wrappers.html#module-phantom.ext.phonenumbers
+
+```bash
+$  python3 -m pip install phantom-types[all]
 ```
 
-You go ahead and use this function across your project, until suddenly you run into a
-subtle issue that you didn't think of: this function raises `StopIteration` when passed
-an empty iterable. In functional programming terms this is due to the function being
-_partial_ it specifies that it takes `Iterable` as argument, but in reality
-we would need a narrower type to describe the set of valid arguments, and make the
-function _total_.
+## Examples
 
-You need to deal with the problem at hand so you go ahead and adjust all the call sites
-of your function, and you now end up either asserting that the iterables are non-empty,
-or catching the `StopIteration`.
+By introducing a phantom type we can define a pre-condition for a function argument.
 
 ```python
-items = get_values()
-if not len(items):
-    return "empty"
-return f"first element is: {head(items)}"
+from phantom import Phantom
+from phantom.predicates.collection import contained
+
+
+class Name(str, Phantom, predicate=contained({"Jane", "Joe"})):
+    ...
+
+
+def greet(name: Name):
+    print(f"Hello {name}!")
 ```
 
-This works, and you could move on like this from here, but, you have now introduced
-shotgun parsing into your application, since further down the processing line you need
-to check the length if the iterable for other purposes. Shotgun parsing is an
-antipattern that results in a program state that is hard to predict and will very likely
-lead to bugs down the line. So how should you deal with this?
-
-Using phantom types you can use the builtin `NonEmpty` type.
+Now this will be a valid call.
 
 ```python
-def head(iterable: NonEmpty[T]) -> T:
-    return next(iter(iterable))
+greet(Name.parse("Jane"))
 ```
 
-The implementation is identical but you've now altered the signature of the function so
-that it's total, it can deal with _all_ values of its argument type without raising an
-exception.
-
-By using the narrower type at the call sites, you avoid shotgun parsing, since the other
-logic further down in the processing chain can rely on the type as well, and you won't
-need to check the length of the iterable again.
+... and so will this.
 
 ```python
-items = get_values()
-if not isinstance(items, NonEmpty):
-    return "empty"
-return f"first element is: {head(items)}"
+joe = "Joe"
+assert isinstance(joe, Name)
+greet(joe)
 ```
 
-This strategy works in all places where a function works on a narrower type than you can
-describe with the builtin types of Python, not only this made-up example. You can narrow
-strings, integers, datetimes, and any other arbitrary types to completely rid of
-duplicated validation throughout code bases.
+But this will yield a static type checking error.
 
-There's a set of phantom types that ships builtin that is helpful to build on top of,
-although you might mostly use your own custom phantom types that describe the exact
-values that your implementations require. [The documentation contains examples of how to
-create phantom types][docs].
+```python
+greet("bird")
+```
 
-How are phantom types implemented?
-==================================
+To be clear, the reason the first example passes is not because the type checker somehow
+magically knows about our predicate, but because we provided the type checker with proof
+through the `assert`. All the type checker cares about is that runtime cannot continue
+executing past the assertion, unless the variable is a `Name`. If we move the calls
+around like in the example below, the type checker would give an error for the `greet()`
+call.
 
-phantom-types make use of Python's `__instancecheck__` protocol to make types work with
-the same checks that are recognized as type guards by static type checkers, e.g.
-`isinstance()`. Phantom types are never instantiated at runtime and so will not add any
-processing-, or memory overhead. Instead the question of whether a value is properly
-parsed before it is processed is deffered to the static type checker.
+```python
+joe = "Joe"
+greet(joe)
+assert isinstance(joe, Name)
+```
 
-The choice to design the library around boolean predicates, and much of the initially
-shipped builtin predicates are heavily inspired by [fthomas/refined][refined].
+### Runtime type checking
 
-[docs]: https://phantom-types.readthedocs.io/en/stable/
+By combining phantom types with a runtime type-checker like [beartype] or [typeguard],
+we can achieve the same level of security as you'd gain from using [contracts][dbc].
+
+```python
+import datetime
+from beartype import beartype
+from phantom.datetime import TZAware
+
+
+@beartype
+def soon(dt: TZAware) -> TZAware:
+    return dt + datetime.timedelta(seconds=10)
+```
+
+The `soon` function will now validate that both its argument and return value is
+timezone aware, e.g. pre- and post conditions.
+
+### Pydantic support
+
+Phantom types are ready to use with [pydantic] and have [integrated
+support][pydantic-support] out-of-the-box. Subclasses of `Phantom` work with both
+pydantic's validation and its schema generation.
+
+```python
+class Name(str, Phantom, predicate=contained({"Jane", "Joe"})):
+    @classmethod
+    def __schema__(cls) -> Schema:
+        return super().__schema__() | {
+            "description": "Either Jane or Joe",
+            "format": "custom-name",
+        }
+
+
+class Person(BaseModel):
+    name: Name
+    created: TZAware
+
+
+print(json.dumps(Person.schema(), indent=2))
+```
+
+The code above outputs the following JSONSchema.
+
+```json
+{
+  "title": "Person",
+  "type": "object",
+  "properties": {
+    "name": {
+      "title": "Name",
+      "description": "Either Jane or Joe",
+      "format": "custom-name",
+      "type": "string"
+    },
+    "created": {
+      "title": "TZAware",
+      "description": "A date-time with timezone data.",
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": ["name", "created"]
+}
+```
+
+## Development
+
+Install development requirements, preferably in a virtualenv:
+
+```bash
+$ python3 -m pip install .[all,test]
+```
+
+Run tests:
+
+```bash
+$ pytest
+# or
+$ make test
+```
+
+Linting and static type checking is setup with [pre-commit], after installing it you can
+setup hooks with the following command, so that checks run before you push changes.
+
+```bash
+# configure hooks to run when pushing
+$ pre-commit install -t pre-push
+# or when committing
+$ pre-commit install -t pre-commit
+# run all checks
+$ pre-commit run --all-files
+# or just a single hook
+$ pre-commit run mypy --all-files
+```
+
+In addition to static type checking, the project is setup with [pytest-mypy-plugins] to
+test that exposed mypy types work as expected, these checks will run together with the
+rest of the test suite, but you can single them out with the following command.
+
+```bash
+$ make test-typing
+```
+
 [parse]: https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/
 [ghosts]: https://kataskeue.com/gdp.pdf
-[refined]: https://github.com/fthomas/refined
+[build-status]:
+  https://github.com/antonagestam/phantom-types/actions?query=workflow%3ACI+branch%3Amain
+[coverage]: https://codecov.io/gh/antonagestam/phantom-types
+[typeguard]: https://github.com/agronholm/typeguard
+[beartype]: https://github.com/beartype/beartype
+[dbc]: https://en.wikipedia.org/wiki/Design_by_contract
+[pydantic]: https://pydantic-docs.helpmanual.io/
+[pydantic-support]:
+  https://phantom-types.readthedocs.io/en/stable/pages/pydantic-support.html
+[pre-commit]: https://pre-commit.com/
+[pytest-mypy-plugins]: https://github.com/TypedDjango/pytest-mypy-plugins

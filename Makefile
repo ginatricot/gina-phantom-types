@@ -2,50 +2,47 @@ SHELL := /usr/bin/env bash
 
 .PHONY: all
 
-pytest_args = --mypy-ini-file=setup.cfg --doctest-modules --ignore=examples
+# Currently running typeguard on all modules except:
+# - phantom.interval
+# - phantom._base
+# - phantom.ext.phonenumbers
+typeguard_packages := \
+	phantom.boolean \
+	phantom.datetime \
+	phantom.fn \
+	phantom.iso3166 \
+	phantom.re \
+	phantom.schema \
+	phantom.sized \
+	phantom.utils \
+	phantom.predicates._base \
+	phantom.predicates.boolean \
+	phantom.predicates.collection \
+	phantom.predicates.datetime \
+	phantom.prediactes.generic \
+	phantom.predicates.interval \
+	phantom.predicates.numeric \
+	phantom.predicates.re \
+	phantom.predicates.utils
+typeguard_arg := \
+	--typeguard-packages=$(shell echo $(typeguard_packages) | sed 's/ /,/g')
 
 .PHONY: test
 test:
-	pytest $(pytest_args) $(test)
+	pytest $(test)
 
 .PHONY: test-runtime
 test-runtime:
-	pytest $(pytest_args) $(test) tests/**{/*,}.py
+	pytest $(test) -k.py
 
-.PHONY: coverage
-coverage:
-	@coverage run -m pytest $(pytest_args) $(test)
+.PHONY: test-typeguard
+test-typeguard:
+	pytest $(typeguard_arg) $(test)
 
-.PHONY: coverage-report
-coverage-report:
-	@coverage report
-	@coverage xml
-
-.PHONY: format-readme
-format-readme:
-	docker run \
-		--rm \
-		-v "$$PWD/README.md:/work/README.md" \
-		tmknom/prettier \
-		--parser=markdown \
-		--print-width=88 \
-		--prose-wrap=always \
-		--write \
-		'**/*.md'
+.PHONY: test-typing
+test-typing:
+	pytest $(test) -k.yaml
 
 .PHONY: clean
 clean:
-	rm -rf *.egg-info **{/**,}/__pycache__ build dist .coverage
-
-.PHONY: build
-build: clean
-	python3 -m pip install --upgrade wheel setuptools
-	python3 setup.py sdist bdist_wheel
-
-.PHONY: create-release
-create-release:
-	(\
-	  tag="rr/v$$(python3 -c 'import phantom; print(phantom.__version__)')";\
-	  git tag "$$tag";\
-	  git push origin "$$tag";\
-	)
+	rm -rf {**/,}*.egg-info **{/**,}/__pycache__ build dist .coverage coverage.xml
