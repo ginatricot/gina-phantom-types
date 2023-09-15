@@ -18,7 +18,6 @@ Types
     :undoc-members:
     :show-inheritance:
 
-
 .. autoclass:: phantom.ext.phonenumbers.FormattedPhoneNumber
     :members:
     :undoc-members:
@@ -38,28 +37,4 @@ Exceptions
 ^^^^^^^^^^
 
 .. autoexception:: phantom.ext.phonenumbers.InvalidPhoneNumber
-    :show-inheritance:
-
-Country codes
--------------
-
-.. automodule:: phantom.ext.iso3166
-
-Types
-^^^^^
-
-.. autoclass:: phantom.ext.iso3166.Alpha2
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-Functions
-^^^^^^^^^
-
-.. autofunction:: phantom.ext.iso3166.normalize_alpha2_country_code
-
-Exceptions
-^^^^^^^^^^
-
-.. autoexception:: phantom.ext.iso3166.InvalidCountryCode
     :show-inheritance:
